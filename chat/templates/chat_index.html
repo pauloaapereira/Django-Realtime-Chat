@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Django Realtime Chat Using Socket.IO and NodeJS</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+</head>
+<body>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<!-- change the IP to yours -->
+<script src="http://localhost:4000/socket.io/socket.io.js"></script>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="panel panel-primary">
+                    <div class="panel-heading" style="font-size:24px; text-shadow: 1px 1px 1px #000;">Django Realtime Chat Using Socket.IO and NodeJS</div>
+                    <div id="messages-list" class="panel-body" style="height:520px;overflow-y:scroll;width:100%;">
+                        {% for message in messages %}
+                            <div class="input-group">
+                                <span class="input-group-addon" style="text-shadow: 1px 1px 1px #000; background-color: rgb(66, 133, 244); color: #fff" >
+                                    {{ message.user_name }}
+                                </span>
+                                <input type="text" class="form-control" value="{{ message.message }}" readonly style="background-color: #fff" />
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="navbar navbar-fixed-bottom">
+        <div class="col-xs-2">
+            <div class="form-group has-feedback">
+                <label class="control-label">Name</label>
+                <input id="name" type="text" class="form-control" placeholder="Username" maxlength="20" required />
+                <i class="glyphicon glyphicon-user form-control-feedback"></i>
+            </div>
+        </div>
+        <div class="col-xs-10">
+            <form>
+                <div class="form-group has-feedback">
+                    <label class="control-label">Message</label>
+                    <input id="message" type="text" class="form-control" placeholder="Enter your message here" required maxlength="140" />
+                    <i class="glyphicon glyphicon-comment form-control-feedback"></i>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+
+    // host of the server
+    var host = 'localhost';
+    var nodejs_port = '4000';
+
+    var socket = io(host + ':' + nodejs_port);
+
+    // when the document is ready, scrolls down the page to the last page if there are messages
+    $(function() {
+        updateScroll();
+    });
+
+    // on the form submit
+    $('form').submit(function() {
+        // gets the elements by ids
+        var msg = $('#message');
+        var name = $('#name');
+
+        // if the message and the name aren't empty or aren't spaces,
+        if(msg.val().trim() !== "" && name.val().trim() !== "") {
+            // creates the message object
+            msgObject = {
+                'user_name': name.val().trim(),
+                'message': msg.val().trim()
+            };
+
+            // emits the msgObject to the server
+            socket.emit('message', msgObject);
+        }
+
+        // clear the message element
+        msg.val('');
+        // returns false to avoid the form to reload the page
+        return false;
+    });
+
+    // receives the message object from the server
+    socket.on('getMessage', function(msgObject) {
+        // gets the fields of the message
+        var name = msgObject.user_name;
+        var msg = msgObject.message;
+
+        var icon = $('<span class="input-group-addon" style="text-shadow: 1px 1px 1px #000; background-color: rgb(66, 133, 244); color: #fff" ></span>').append(name);
+        var msgItem = $('<input type="text" class="form-control" readonly style="background-color: #fff" />').val(msg);
+        var input_group = $('<div class="input-group"></div>').append(icon, msgItem);
+
+        // appends the message to the screen
+        $('#messages-list').append(input_group);
+
+        // updates the scroll
+        updateScroll();
+    });
+
+    function updateScroll(){
+        var element = document.getElementById("messages-list");
+        element.scrollTop = element.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
